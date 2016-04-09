@@ -1,0 +1,18 @@
+# Novo usuário
+sudo adduser deploy
+sudo gpasswd -a deploy sudo
+# PARAR DE EXIGIR SENHA PARA sudo
+# sudo visudo -f /etc/sudoers.d/deploy
+# INSERIR: deploy ALL=(ALL) NOPASSWD:ALL
+
+# Trocar usuário
+su - deploy
+
+# TO-DO: Configurar SSH
+
+# Atualizar apt-get
+sudo apt-get update
+sudo apt-get upgrade
+
+# Reiniciar
+sudo shutdown -r now

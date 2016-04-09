@@ -1,0 +1,90 @@
+# Instalar dependências para Ruby, rbenv e redis
+sudo apt-get install -y git-core curl zlib1g-dev build-essential libssl-dev libreadline-dev libyaml-dev libsqlite3-dev sqlite3 libxml2-dev libxslt1-dev libcurl4-openssl-dev python-software-properties libffi-dev 
+
+# Instalar TCL (dependência do redis)
+sudo apt-get install -y tcl8.5
+
+# Instalar ImageMagick (dependência do Paperclip)
+sudo apt-get install -y imagemagick
+
+# Instalar nodejs (dependência do Rails para Asset Pipeline)
+sudo add-apt-repository -y ppa:chris-lea/node.js
+sudo apt-get install -y nodejs
+
+# Instalar postgresql
+sudo apt-get install -y postgresql postgresql-contrib libpq-dev
+sudo -u postgres createuser -s deploy
+sudo -u postgres createdb deploy
+
+# Instalar nginx
+sudo apt-get install -y nginx
+# CRIAR SYMLINK DO APP EM /etc/nginx/sites-available/<appname>
+# EXEMPLO: ln -s /home/deploy/<appname> /etc/nginx/sites-available/<appname>
+
+# Instalar rbenv
+git clone git://github.com/sstephenson/rbenv.git .rbenv
+echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bash_profile
+echo 'eval "$(rbenv init -)"' >> ~/.bash_profile
+
+git clone git://github.com/sstephenson/ruby-build.git ~/.rbenv/plugins/ruby-build
+echo 'export PATH="$HOME/.rbenv/plugins/ruby-build/bin:$PATH"' >> ~/.bash_profile
+source ~/.bash_profile
+
+# Instalar rbenv-vars (variáveis de ambiente)
+git clone https://github.com/sstephenson/rbenv-vars.git ~/.rbenv/plugins/rbenv-vars
+touch ~/.rbenv-vars
+# EDITAR ~/.rbenv-vars INSERINDO AS VARIÁVEIS DE AMBIENTE
+# EXEMPLO: FOO=bar
+
+# Instalar Ruby
+rbenv install -v 2.2.4
+rbenv global 2.2.4
+
+# Configurar gems para instalar sem documentação
+echo "gem: --no-document" >> ~/.gemrc
+
+# Instalar Bundler
+gem install bundler
+
+# Instalar Rails
+gem install rails -v 4.2.4
+
+# Instalar shims (comandos do Bundler e do Rails)
+rbenv rehash
+
+# Configurar Upstart Script do Sidekiq
+wget https://raw.githubusercontent.com/joaomarcelo9393/sidekiq/81b97da5a619a2b5b27d9160c51adcafdb35225d/examples/upstart/sidekiq-workers.conf
+wget https://raw.githubusercontent.com/joaomarcelo9393/sidekiq/81b97da5a619a2b5b27d9160c51adcafdb35225d/examples/upstart/sidekiq.conf
+sudo mv sidekiq-workers.conf sidekiq.conf /etc/init/
+
+# INSERIR OS DIRETÓRIOS DAS APLICAÇÕES EM /etc/sidekiq.conf
+
+# INICIAR PARA TODAS AS APLICAÇÕES: sudo start sidekiq-workers
+# REINICIAR PARA TODAS:             sudo restart sidekiq-workers
+# PARAR PARA TODAS:                 sudo stop sidekiq-workers
+# INICIAR PARA UMA APLICAÇÃO:       sudo start sidekiq app=/home/deploy/appname
+
+# Configurar Upstart Script do Puma
+wget https://raw.githubusercontent.com/joaomarcelo9393/puma/80ea6eff97bdfd8ff3211adaed5535a6b4e778b9/tools/jungle/upstart/puma-manager.conf
+wget https://raw.githubusercontent.com/joaomarcelo9393/puma/80ea6eff97bdfd8ff3211adaed5535a6b4e778b9/tools/jungle/upstart/puma.conf
+sudo mv puma-manager.conf puma.conf /etc/init/
+
+# INSERIR OS DIRETÓRIOS DAS APLICAÇÕES EM /etc/puma.conf
+
+# INICIAR TODAS AS APLICAÇÕES: sudo start puma-manager
+# REINICIAR TODAS:             sudo restart puma-manager
+# PARAR TODAS:                 sudo stop puma-manager
+# INICIAR UMA APLICAÇÃO:       sudo start puma app=/home/deploy/appname
+
+# Instalar redis
+wget http://download.redis.io/releases/redis-stable.tar.gz
+tar xzf redis-stable.tar.gz
+cd redis-stable
+make
+make test
+sudo make install
+cd utils
+# CONFIGURAÇÃO INTERATIVA
+sudo ./install_server.sh
+cd ../..
+rm -rf redis-stable redis-stable.tar.gz
